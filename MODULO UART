@@ -1,0 +1,138 @@
+// CONFIG1
+#pragma config FOSC = INTRC_NOCLKOUT// Oscillator Selection bits (INTOSCIO oscillator: I/O function on RA6/OSC2/CLKOUT pin, I/O function on RA7/OSC1/CLKIN)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled and can be enabled by SWDTEN bit of the WDTCON register)
+#pragma config PWRTE = OFF      // Power-up Timer Enable bit (PWRT disabled)
+#pragma config MCLRE = OFF      // RE3/MCLR pin function select bit (RE3/MCLR pin function is digital input, MCLR internally tied to VDD)
+#pragma config CP = ON          // Code Protection bit (Program memory code protection is enabled)
+#pragma config CPD = ON         // Data Code Protection bit (Data memory code protection is enabled)
+#pragma config BOREN = OFF      // Brown Out Reset Selection bits (BOR disabled)
+#pragma config IESO = OFF       // Internal External Switchover bit (Internal/External Switchover mode is disabled)
+#pragma config FCMEN = OFF      // Fail-Safe Clock Monitor Enabled bit (Fail-Safe Clock Monitor is disabled)
+#pragma config LVP = ON         // Low Voltage Programming Enable bit (RB3/PGM pin has PGM function, low voltage programming enabled)
+
+// CONFIG2
+#pragma config BOR4V = BOR40V   // Brown-out Reset Selection bit (Brown-out Reset set to 4.0V)
+#pragma config WRT = OFF        // Flash Program Memory Self Write Enable bits (Write protection off)
+
+// #pragma config statements should precede project file includes.
+// Use project enums instead of #define for ON and OFF.
+
+//******************************************************************************
+//Importación de librerias
+//******************************************************************************
+
+#include <xc.h>
+#include <stdint.h>
+
+//******************************************************************************
+//Prototipo de funciones
+//******************************************************************************
+
+void Setup(void);               // Llamamos las configuraciones de los pines
+void Cad_datos(char *str);      //Función que envia los caracteres
+void transmision(char datos);   //Funcion para trasnmitir 
+
+//******************************************************************************
+//Funcion de Interrupcion 
+//******************************************************************************
+
+//*********
+//Principal
+//
+void transmision(char datos)
+    {
+    while (TXSTAbits.TRMT == 0);
+    TXREG = datos;
+    }
+
+void Cad_datos(char *str)
+    {
+    while(*str != '\0')
+        {
+        transmision(*str);
+        str++;
+        }
+    }
+
+//******************************************************************************
+//Main
+//******************************************************************************
+void main(void) {
+   Setup();
+   while(1){
+       
+   
+       //Depliegue de textos
+       Cad_datos("\r Que desea hacer? \r");
+       Cad_datos("\r 1) Poner valores \r");
+       Cad_datos("\r 2) Colocar valores en POrtA \r");
+       Cad_datos("\r 3) Colocar valores en POrtB \r");
+       
+       while(PIR1bits.RCIF == 0);
+       char valores = RCREG;
+       //Implementacion de caractreres
+       switch(valores)
+       {
+           case 49:
+           Cad_datos("Hola \r");
+           break;
+           
+           case 50:
+           Cad_datos(" Colocar valores en POrtA: ");
+           while(PIR1bits.RCIF == 0);
+           PORTA = RCREG;
+           Cad_datos("\r Completado \r");
+           break;
+           
+           case 51:
+               Cad_datos("Colocar valores en POrtD");
+               while(PIR1bits.RCIF == 0);
+               PORTD = RCREG;
+               Cad_datos("\r Completado \r");
+               break;
+       
+       }
+   }   
+}
+   /*__delay_us(20000);
+   TXREG = 68;
+   while (1){
+   */
+   //Asignar el valor e ASCII
+
+
+//******************************************************************************
+// Funcion de configuraciones
+//******************************************************************************
+void Setup(void){
+//********************* Configuración de entradas y salidas ********************
+    ANSEL = 0x00;       //ANS0 como entrada analogica  
+    ANSELH  = 0x00;    // Configuracion a pines Digitales 
+                    //Configuracion para pines como salidas o entradas 
+    
+    TRISA = 0x00;           
+    PORTA = 0x00;
+    TRISD = 0x00;
+    PORTD = 0x00;
+//*********************** Configuración del Reloj a 8MHZ ***********************
+    OSCCONbits.IRCF = 0b111;    //a 8MHz 111
+    OSCCONbits.SCS   = 1;       //Configuracion de oscilador interno
+    
+       
+ //************************* Configuración de TX Y RX **************************
+    TXSTAbits.TXEN = 1;     //Para habilitar la transmision 
+    TXSTAbits.SYNC = 0;     //Para habilitar el modo asincrono
+    TXSTAbits.BRGH = 1;     //la transmision rapida
+    
+    BAUDCTLbits.BRG16 = 1;  //Genera 16bits de Baud Rate
+        
+    SPBRG = 207;         //spebrgh : spbrg = 207  concatenadas 
+    SPBRGH = 0x00;
+  
+    RCSTAbits.SPEN = 1;     //Para encender el modulo
+    RCSTAbits.CREN = 1;     //Para activar la recive
+    //RCSTAbits.RX9 = 0;      //Para la transmision de 8 bits
+    TXSTAbits.TXEN = 1;     //Para habilitar la transmision 
+  
+}
+        
